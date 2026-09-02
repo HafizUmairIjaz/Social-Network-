@@ -1,5 +1,6 @@
 import express from "express";
 import User from "../models/User.js";
+import { authMiddleware } from "../middleware/auth.middleware.js";
 
 const router = express.Router();
 
@@ -90,15 +91,24 @@ router.post("/", async (req, res) => {
 
 // UPDATE USER
 
-router.put("/:id", async (req, res) => {
+router.put("/:id", authMiddleware, async (req, res) => {
 
     try {
+
+        const loggedInUserId = (req as any).user.userId;
+
+        if (loggedInUserId !== req.params.id) {
+            res.status(403).json({
+                message: "You can only update your own profile"
+            });
+            return;
+        }
 
         const user = await User.findByIdAndUpdate(
             req.params.id,
             req.body,
             { new: true }
-        );
+        ).select("-password");
 
         if (!user) {
             res.status(404).json({
@@ -120,9 +130,18 @@ router.put("/:id", async (req, res) => {
 
 // DELETE USER
 
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", authMiddleware, async (req, res) => {
 
     try {
+
+        const loggedInUserId = (req as any).user.userId;
+
+        if (loggedInUserId !== req.params.id) {
+            res.status(403).json({
+                message: "You can only delete your own account"
+            });
+            return;
+        }
 
         const user = await User.findByIdAndDelete(req.params.id);
 
@@ -148,11 +167,11 @@ router.delete("/:id", async (req, res) => {
 
 // FOLLOW USER
 
-router.post("/:id/follow/:targetId", async (req, res) => {
+router.post("/follow/:targetId",authMiddleware, async (req, res) => {
 
     try {
 
-        const user = await User.findById(req.params.id);
+        const user = await User.findById((req as any).user.userId);
         const targetUser = await User.findById(req.params.targetId);
 
         if (!user || !targetUser) {
@@ -189,11 +208,11 @@ router.post("/:id/follow/:targetId", async (req, res) => {
 
 // UNFOLLOW USER
 
-router.post("/:id/unfollow/:targetId", async (req, res) => {
+router.post("/unfollow/:targetId",authMiddleware, async (req, res) => {
 
     try {
 
-        const user = await User.findById(req.params.id);
+        const user = await User.findById((req as any).user.userId);
         const targetUser = await User.findById(req.params.targetId);
 
         if (!user || !targetUser) {
