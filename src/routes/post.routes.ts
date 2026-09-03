@@ -1,6 +1,7 @@
 import express from "express";
 import Post from "../models/Post.js";
 import User from "../models/User.js";
+import { authMiddleware } from "../middleware/auth.middleware.js";
 
 const router = express.Router();
 
@@ -42,7 +43,7 @@ router.get("/", async (req, res) => {
 
 // GET ONE POST
 
-router.get("/:id", async (req, res) => {
+router.get("/:id",async (req, res) => {
 
     try {
 
@@ -69,7 +70,7 @@ router.get("/:id", async (req, res) => {
 
 // CREATE POST
 
-router.post("/", async (req, res) => {
+router.post("/", authMiddleware , async (req, res) => {
 
     try {
 
@@ -102,7 +103,7 @@ router.post("/", async (req, res) => {
 
 // UPDATE POST
 
-router.put("/:id", async (req, res) => {
+router.put("/:id",authMiddleware, async (req, res) => {
 
     try {
 
@@ -134,7 +135,7 @@ router.put("/:id", async (req, res) => {
 
 // DELETE POST
 
-router.delete("/:id", async (req, res) => {
+router.delete("/:id",authMiddleware, async (req, res) => {
 
     try {
 
