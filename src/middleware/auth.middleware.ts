@@ -4,8 +4,13 @@ import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 
 const SECRET_KEY = process.env.JWT_SECRET as string;
+export interface AuthRequest extends Request {
+    user?: {
+        userId: string;
+    };
+}
 export const authMiddleware = (
-    req: Request,
+    req: AuthRequest,
     res: Response,
     next: NextFunction
 ) => {
@@ -26,9 +31,12 @@ export const authMiddleware = (
             });
         }
 
-        const decoded = jwt.verify(token, SECRET_KEY);
+        const decoded = jwt.verify(
+            token,
+            SECRET_KEY
+        ) as { userId: string };
 
-        (req as any).user = decoded;
+        req.user = decoded;
 
         next();
 

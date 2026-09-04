@@ -1,6 +1,6 @@
 import express from "express";
 import User from "../models/User.js";
-import { authMiddleware } from "../middleware/auth.middleware.js";
+import { authMiddleware,AuthRequest } from "../middleware/auth.middleware.js";
 
 const router = express.Router();
 
@@ -91,12 +91,12 @@ router.post("/", async (req, res) => {
 
 // UPDATE USER
 
-router.put("/:id", authMiddleware, async (req, res) => {
+router.put("/:id", authMiddleware, async (req: AuthRequest,res) => {
 
     try {
 
-        const loggedInUserId = (req as any).user.userId;
-
+        //const loggedInUserId = (req as any).user.userId;
+        const loggedInUserId = req.user?.userId;
         if (loggedInUserId !== req.params.id) {
             res.status(403).json({
                 message: "You can only update your own profile"
@@ -104,10 +104,18 @@ router.put("/:id", authMiddleware, async (req, res) => {
             return;
         }
 
+        const { name, email } = req.body;
+
         const user = await User.findByIdAndUpdate(
             req.params.id,
-            req.body,
-            { new: true }
+            {
+                name,
+                email
+            },
+            {
+                new: true,
+                runValidators: true
+            }
         ).select("-password");
 
         if (!user) {
