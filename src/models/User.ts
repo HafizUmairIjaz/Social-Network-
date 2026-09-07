@@ -1,4 +1,4 @@
-
+//MongoDB data structure/schema define 
 import mongoose from "mongoose";
 
 export interface IUser {
@@ -6,8 +6,11 @@ export interface IUser {
     email: string;
     password: string;
     following: mongoose.Types.ObjectId[];
+    isPaid: boolean;
+    role: "user" | "moderator";
 }
-// mongoDB document structure
+
+// MongoDB document structure
 const userSchema = new mongoose.Schema<IUser>(
     {
         name: {
@@ -33,7 +36,18 @@ const userSchema = new mongoose.Schema<IUser>(
                 type: mongoose.Schema.Types.ObjectId,
                 ref: "User"
             }
-        ]
+        ],
+
+        isPaid: {
+            type: Boolean,
+            default: false
+        },
+
+        role: {
+            type: String,
+            enum: ["user", "moderator"],
+            default: "user"
+        }   
     },
     {
         timestamps: true

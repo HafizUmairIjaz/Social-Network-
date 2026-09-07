@@ -62,6 +62,12 @@ router.get("/feed", authMiddleware, async (req, res) => {
             });
             return;
         }
+        if (!user.isPaid) {
+        res.status(403).json({
+        message: "Premium subscription required to access the feed"
+    });
+        return;
+    }
 
         const totalPosts = await Post.countDocuments({
             author: { $in: user.following }
