@@ -14,6 +14,20 @@ router.get("/", async (req, res) => {
         const page = Number(req.query.page) || 1;
         const limit = Number(req.query.limit) || 10;
 
+        // Validate page
+        if (!Number.isInteger(page) || page < 1) {
+            return res.status(400).json({
+                message: "Page must be a positive integer"
+            });
+        }
+
+        // Validate limit
+        if (!Number.isInteger(limit) || limit < 1 || limit > 100) {
+            return res.status(400).json({
+                message: "Limit must be between 1 and 100"
+            });
+        }
+
         const skip = (page - 1) * limit;
 
         const users = await User.find()
@@ -188,6 +202,13 @@ router.post("/follow/:targetId",authMiddleware, async (req, res) => {
             });
             return;
         }
+        // Prevent self-follow
+        if (user._id.toString() === targetUser._id.toString()) {
+        res.status(400).json({
+        message: "You cannot follow yourself"
+        });
+        return;
+}
 
         if (user.following.includes(targetUser._id)) {
             res.status(400).json({
