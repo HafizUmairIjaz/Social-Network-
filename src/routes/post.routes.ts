@@ -1,19 +1,18 @@
 import express from "express";
 import Post from "../models/Post.js";
 import User from "../models/User.js";
-import { authMiddleware } from "../middleware/auth.middleware.js";
+import {
+    authMiddleware,
+    AuthRequest
+} from "../middleware/auth.middleware.js";
 import { emitNewPost } from "../socket.js";
 
-
 const router = express.Router();
-
 
 // GET ALL POSTS WITH PAGINATION
 
 router.get("/", async (req, res) => {
-
     try {
-
         const page = Number(req.query.page) || 1;
         const limit = Number(req.query.limit) || 10;
 
@@ -35,7 +34,6 @@ router.get("/", async (req, res) => {
         });
 
     } catch (error) {
-
         res.status(500).json({
             message: "Failed to get posts"
         });
@@ -44,21 +42,35 @@ router.get("/", async (req, res) => {
 
 // GET SOCIAL FEED WITH PAGINATION
 
-router.get("/feed", authMiddleware, async (req, res) => {
-
+router.get("/feed", authMiddleware, async (req: AuthRequest, res) => {
     try {
-
         const page = Number(req.query.page) || 1;
         const limit = Number(req.query.limit) || 10;
 
         const skip = (page - 1) * limit;
         const sortOrder = req.query.sort === "oldest" ? 1 : -1;
 
-        const user = await User.findById((req as any).user.userId);
+        const userId = req.user?.userId;
+
+        if (!userId) {
+            res.status(401).json({
+                message: "User not authenticated"
+            });
+            return;
+        }
+
+        const user = await User.findById(userId);
 
         if (!user) {
             res.status(404).json({
                 message: "User not found"
+            });
+            return;
+        }
+
+        if (!user.isPaid) {
+            res.status(403).json({
+                message: "Premium subscription required to access the feed"
             });
             return;
         }
@@ -84,7 +96,6 @@ router.get("/feed", authMiddleware, async (req, res) => {
         });
 
     } catch (error) {
-
         res.status(500).json({
             message: "Failed to fetch feed"
         });
@@ -93,10 +104,8 @@ router.get("/feed", authMiddleware, async (req, res) => {
 
 // GET ONE POST
 
-router.get("/:id",async (req, res) => {
-
+router.get("/:id", async (req, res) => {
     try {
-
         const post = await Post.findById(req.params.id)
             .populate("author", "name email");
 
@@ -110,87 +119,58 @@ router.get("/:id",async (req, res) => {
         res.json(post);
 
     } catch (error) {
-
         res.status(500).json({
             message: "Failed to get post"
         });
     }
 });
 
-
 // CREATE POST
 
-router.post("/", authMiddleware , async (req, res) => {
-
+router.post("/", authMiddleware, async (req: AuthRequest, res) => {
     try {
+        const userId = req.user?.userId;
 
-        const { content, author } = req.body;
+        if (!userId) {
+            res.status(401).json({
+                message: "User not authenticated"
+            });
+            return;
+        }
 
-        const user = await User.findById(author);
+        const { content } = req.body;
+
+        const user = await User.findById(userId);
 
         if (!user) {
             res.status(404).json({
-                message: "Author not found"
+                message: "User not found"
             });
             return;
         }
 
         const post = await Post.create({
             content,
-            author
+            author: userId
         });
-        emitNewPost(post);
- 
+
+         await emitNewPost(post);
 
         res.status(201).json(post);
 
     } catch (error) {
         console.error("CREATE POST ERROR:", error);
+
         res.status(500).json({
             message: "Failed to create post"
         });
     }
 });
 
-
-// UPDATE POST
-
-router.put("/:id",authMiddleware, async (req, res) => {
-
-    try {
-
-        const post = await Post.findByIdAndUpdate(
-            req.params.id,
-            {
-                content: req.body.content
-            },
-            { new: true }
-        );
-
-        if (!post) {
-            res.status(404).json({
-                message: "Post not found"
-            });
-            return;
-        }
-
-        res.json(post);
-
-    } catch (error) {
-
-        res.status(500).json({
-            message: "Failed to update post"
-        });
-    }
-});
-
-
 // DELETE POST
 
-router.delete("/:id",authMiddleware, async (req, res) => {
-
+router.delete("/:id", authMiddleware, async (req, res) => {
     try {
-
         const post = await Post.findByIdAndDelete(req.params.id);
 
         if (!post) {
@@ -205,12 +185,10 @@ router.delete("/:id",authMiddleware, async (req, res) => {
         });
 
     } catch (error) {
-
         res.status(500).json({
             message: "Failed to delete post"
         });
     }
 });
-
 
 export default router;

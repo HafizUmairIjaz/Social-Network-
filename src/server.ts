@@ -8,6 +8,9 @@ import userRoutes from "./routes/user.routes.js";
 import postRoutes from "./routes/post.routes.js";
 import authRoutes from "./routes/auth.routes.js";
 import { setupSocket } from "./socket.js";
+import paymentRoutes from "./routes/payment.routes.js";
+import moderatorRoutes from "./routes/moderator.routes.js";
+
 
 
 const app = express();
@@ -20,7 +23,7 @@ export const io = new Server(httpServer, {
 });
 setupSocket(io);
 // json request body read 
-app.use(express.json());
+//app.use(express.json());
 
 mongoose
     .connect("mongodb://127.0.0.1:27017/social-network")
@@ -36,9 +39,16 @@ app.get("/", (req, res) => {
         message: "Social Network API is running"
     });
 });
+
+app.use("/payment", paymentRoutes);
+
+app.use(express.json()); 
+
 app.use("/users", userRoutes);
 app.use("/posts", postRoutes);
 app.use("/auth", authRoutes);
+app.use("/moderator", moderatorRoutes);
+
 httpServer.listen(3000, () => {
     console.log("Server running on port 3000");
 });
