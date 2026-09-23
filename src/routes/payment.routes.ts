@@ -4,6 +4,8 @@ import stripe from "../config/stripe.js";
 import Stripe from "stripe";
 import User from "../models/User.js";
 import { authMiddleware, AuthRequest } from "../middleware/auth.middleware.js";
+import StripeEvent from "../models/StripeEvent.js";
+
 
 const router = express.Router();
 
@@ -41,47 +43,64 @@ router.post("/checkout", authMiddleware, async (req: AuthRequest, res) => {
         });
     }
 });
-router.post("/webhook", express.raw({ type: "application/json" }),async (req, res) => {
-    const sig = req.headers["stripe-signature"];
+router.post("/webhook",express.raw({ type: "application/json" }),async (req, res) => {
+        const sig = req.headers["stripe-signature"];
 
-    try {
-        const event = stripe.webhooks.constructEvent(
-            req.body,
-            sig as string,
-            process.env.STRIPE_WEBHOOK_SECRET as string
-        );
+        try {
+            const event = stripe.webhooks.constructEvent(
+                req.body,
+                sig as string,
+                process.env.STRIPE_WEBHOOK_SECRET as string
+            );
 
-        console.log("STRIPE EVENT:", event.type);
-        if (event.type === "checkout.session.completed") {
-        const session = event.data.object as Stripe.Checkout.Session;
+            console.log("STRIPE EVENT:", event.type);
 
-        const userId = session.metadata?.userId;
+            // Check if this event was already processed
+            const existingEvent = await StripeEvent.findOne({
+                eventId: event.id
+            });
 
-    if (userId) {
-        await User.findByIdAndUpdate(userId, {
-            isPaid: true
-        });
+            if (existingEvent) {
+                console.log("Event already processed:", event.id);
 
-        console.log("User marked as paid:", userId);
+                res.json({
+                    received: true
+                });
+                return;
+            }
+
+            if (event.type === "checkout.session.completed") {
+                const session =
+                    event.data.object as Stripe.Checkout.Session;
+
+                const userId = session.metadata?.userId;
+
+                if (userId) {
+                    await User.findByIdAndUpdate(userId, {
+                        isPaid: true
+                    });
+
+                    console.log("User marked as paid:", userId);
+                }
+            }
+
+            // Save event after successful processing
+            await StripeEvent.create({
+                eventId: event.id,
+                type: event.type
+            });
+
+            console.log("Stripe event saved:", event.id);
+
+            res.json({
+                received: true
+            });
+
+        } catch (error) {
+            console.error("Webhook error:", error);
+
+            res.status(400).send("Webhook Error");
+        }
     }
-}
-
-        res.json({ received: true });
-    } catch (error) {
-        console.error("Webhook error:", error);
-        res.status(400).send("Webhook Error");
-    }
-});
-router.get("/success", (req, res) => {
-    res.json({
-        message: "Payment successful"
-    });
-});
-
-router.get("/cancel", (req, res) => {
-    res.json({
-        message: "Payment cancelled"
-    });
-});
-
+);
 export default router;

@@ -1,5 +1,4 @@
 import "dotenv/config";
-
 import { Server } from "socket.io";
 import http from "http";
 import express from "express";
@@ -11,11 +10,8 @@ import { setupSocket } from "./socket.js";
 import paymentRoutes from "./routes/payment.routes.js";
 import moderatorRoutes from "./routes/moderator.routes.js";
 import path from "path";
-
-
 const app = express();
 const httpServer = http.createServer(app);
-
 export const io = new Server(httpServer, {
     cors: {
         origin: "*"
@@ -24,40 +20,32 @@ export const io = new Server(httpServer, {
 setupSocket(io);
 // json request body read 
 //app.use(express.json());
-
 mongoose
     .connect("mongodb://127.0.0.1:27017/social-network")
     .then(() => {
-        console.log("MongoDB connected");
-    })
+    console.log("MongoDB connected");
+})
     .catch((error) => {
-        console.error("MongoDB connection failed:", error);
-    });
-
+    console.error("MongoDB connection failed:", error);
+});
 app.get("/", (req, res) => {
     res.json({
         message: "Social Network API is running"
     });
 });
-
 app.use("/payment", paymentRoutes);
-
-app.use(express.json()); 
+app.use(express.json());
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
-
 app.use("/users", userRoutes);
 app.use("/posts", postRoutes);
 app.use("/auth", authRoutes);
 app.use("/moderator", moderatorRoutes);
-app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+app.use((err, req, res, next) => {
     console.error(err);
-
     res.status(400).json({
         message: err.message || "Something went wrong"
     });
 });
-
 httpServer.listen(3000, () => {
     console.log("Server running on port 3000");
 });
-
