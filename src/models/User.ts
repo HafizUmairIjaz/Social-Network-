@@ -7,7 +7,8 @@ export interface IUser {
     password: string;
     following: mongoose.Types.ObjectId[];
     isPaid: boolean;
-    role: "user" | "moderator";
+    role: "user" | "moderator",
+    avatar : "string";
 }
 
 // MongoDB document structure
@@ -47,7 +48,11 @@ const userSchema = new mongoose.Schema<IUser>(
             type: String,
             enum: ["user", "moderator"],
             default: "user"
-        }   
+        },
+        avatar: { 
+            type : String, 
+            default : null
+        } 
     },
     {
         timestamps: true
