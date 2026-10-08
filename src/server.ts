@@ -21,8 +21,10 @@ export const io = new Server(httpServer, {
         origin: "*"
     }
 });
+
 setupSocket(io);
-// json request body read 
+
+// json request body read
 //app.use(express.json());
 
 mongoose
@@ -42,13 +44,14 @@ app.get("/", (req, res) => {
 
 app.use("/payment", paymentRoutes);
 
-app.use(express.json()); 
+app.use(express.json());
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
 app.use("/users", userRoutes);
 app.use("/posts", postRoutes);
 app.use("/auth", authRoutes);
 app.use("/moderator", moderatorRoutes);
+
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
     console.error(err);
 
@@ -60,4 +63,3 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 httpServer.listen(3000, () => {
     console.log("Server running on port 3000");
 });
-
