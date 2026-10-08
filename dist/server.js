@@ -18,10 +18,10 @@ export const io = new Server(httpServer, {
     }
 });
 setupSocket(io);
-// json request body read 
-//app.use(express.json());
+// Read JSON request body
+app.use(express.json());
 mongoose
-    .connect("mongodb://127.0.0.1:27017/social-network")
+    .connect(process.env.MONGODB_URI)
     .then(() => {
     console.log("MongoDB connected");
 })
@@ -34,7 +34,6 @@ app.get("/", (req, res) => {
     });
 });
 app.use("/payment", paymentRoutes);
-app.use(express.json());
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 app.use("/users", userRoutes);
 app.use("/posts", postRoutes);
@@ -46,6 +45,7 @@ app.use((err, req, res, next) => {
         message: err.message || "Something went wrong"
     });
 });
-httpServer.listen(3000, () => {
-    console.log("Server running on port 3000");
+const PORT = Number(process.env.PORT) || 3000;
+httpServer.listen(PORT, "0.0.0.0", () => {
+    console.log(`Server running on port ${PORT}`);
 });
