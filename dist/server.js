@@ -18,7 +18,7 @@ export const io = new Server(httpServer, {
     }
 });
 setupSocket(io);
-// json request body read 
+// json request body read
 //app.use(express.json());
 mongoose
     .connect("mongodb://127.0.0.1:27017/social-network")
